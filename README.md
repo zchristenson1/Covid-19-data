@@ -1,2 +1,2 @@
 # Covid-19-data
-this is the readme
+To view the code click on "finalcode.Rmd"
