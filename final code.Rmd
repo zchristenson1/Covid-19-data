@@ -33,7 +33,7 @@ covid19 %>%
   scale_color_manual(values=c("Cyan"))+
   labs(title = "Minnesota COVID data")
 ```
-This graph shows the COVID cases in Minnesota over time. As seen on the graph the cases seem to linearly increase until around November 2020. Then there is a steap increase in cases, most likly due to people spending more time indoors. In January 2021 the curve starts to flatten out to become less steap as more people are gtting vaccines. The graph also looks similar to y = x^-3. 
+This graph shows the COVID cases in Minnesota over time. As seen on the graph the cases seem to linearly increase until around November 2020. Then there is a steap increase in cases, most likely due to people spending more time indoors. In January 2021 the curve starts to flatten out to become less steap as more people are getting vaccines. The graph also looks similar to y = x^-3. 
 ```{r}
 covid19 %>% 
   filter(state == "Illinois") %>% 
