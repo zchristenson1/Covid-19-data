@@ -9,22 +9,156 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Covid Project
+This project will look at Covid-19 data starting January 21st 2020, up until March 20th 2021. First we will look at Minnesota and Illniois data and then compare those states along with a few others and then finally compare the cases and deaths in all 50 states.
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+library(tidyverse)     # for data cleaning and plotting
+library(lubridate)     # for date manipulation
+library(openintro)     # for the abbr2state() function
+library(maps)          # for map data
+library(ggmap)         # for mapping points on maps
+library(gplots)        # for col2hex() function
+library(RColorBrewer)  # for color palettes
+library(sf)            # for working with spatial data
+library(leaflet)       # for highly customizable mapping
+library(ggthemes)      # for more themes (including theme_map())
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+covid19 <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv")
+```
+```{r}
+covid19 %>% 
+  filter(state == "Minnesota") %>% 
+  ggplot(aes(x = date, y = cases, color = state)) +
+  geom_line() +
+  scale_color_manual(values=c("Cyan"))+
+  labs(title = "Minnesota COVID data")
+```
+This graph shows the COVID cases in Minnesota over time. As seen on the graph the cases seem to linearly increase until around November 2020. Then there is a steap increase in cases, most likly due to people spending more time indoors. In January 2021 the curve starts to flatten out to become less steap as more people are gtting vaccines. The graph also looks similar to y = x^-3. 
+```{r}
+covid19 %>% 
+  filter(state == "Illinois") %>% 
+  ggplot(aes(x = date, y = cases, color =state)) +
+  scale_color_manual(values=c( "Red"))+
+  geom_line() +
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+  labs(title = "Illinois COVID data")
 ```
 
-## Including Plots
+This graph shows the Illinois COVID-19 cases over time. This graph also sees a steaper increase from November 2020 to January 2021. The total number of cases in Illinois is greater than the number of cases in Minnesota due to the difference in state population.  
+```{r}
+covid19 %>% 
+  filter(state == "Minnesota" | state == "Illinois" | state == "New York" | state == "California"| state == "Texas" | state == "Florida") %>% 
+  ggplot(aes(x = date, y = cases, color = state)) +
+  geom_point(size =0.5)+
+  scale_color_manual(values=c("Green","Pink", "Red","Cyan", "Purple", "Orange"))+
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+labs(title = "COVID data by state")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+This graph shows the previous Minnesota and Illinois case data compared to two very liberal states, with strict COVID laws, California and Florida as well as two more conservative less regulated states, Florida and Texas. The COVID-19 cases are continuing to increase over time in all state, with Minnesota having the least number of total cases. California and Texas both show much larger spikes in cases during the winter months. 
+```{r}
+covid19 %>% 
+  filter(state == "Minnesota" | state == "Illinois" | state == "New York" | state == "California"| state == "Texas" | state == "Florida") %>% 
+  ggplot(aes(x = date, y = cases, color = state, size = deaths)) +
+  geom_point(shape = 21)+
+    scale_color_manual(values=c("Green","Pink", "Red","Cyan", "Purple", "Orange"))+
+  labs(title = "State COVID data")
+```
+
+This graph shows the cases over time as well as the number of deaths. The deaths are denoted by larger circles as the number of deaths increase. The graph shows a proportional relationship between cases and deaths. 
+```{r}
+covid19 %>% 
+  filter(date == "2021-01-01") %>% 
+  ggplot(aes(x=state, y = deaths)) +
+  geom_point(size = 3, color="red", fill=alpha("blue", 0.3), alpha = 0.4, shape=21, stroke=2)+
+  geom_segment( aes(x=state, xend=state, y=0, yend=deaths), size = 1, color = "black")+
+  labs(title = "Total Deaths Per State") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+```
+
+This graph shows each state along the x-axis and the numberof covid deaths along the y-axis. This is called a lollypop graph which shows the number of deaths per state on a certian date, March 1st 2021.  
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+library(usmap)
+library(ggplot2)
+#  plot_usmap(regions = "states", color = "blue") + 
+#  scale_fill_continuous(low = "white", high = "blue", name = "Covid cases")+
+#  labs(title = "U.S. counties",
+#       subtitle = "This is a blank map of the United States.") + 
+#  theme(panel.background=element_blank())
+```
+```{r, echo=FALSE,warning=FALSE,message=FALSE}
+#covid19 %>% 
+#  ggplot() + geom_polygon(data=covid19, aes(x=state, y=cases,),color="white", fill="grey92" ) +
+ # geom_point(data=covid19, aes(x=state, y=cases, color=deaths)) +
+  #scale_size(name="", range = c(2, 15)) +
+  #guides(size=guide_legend("cases")) +
+  #theme_void()
+```
+
+```{r, warning=FALSE,message=FALSE}
+library(gapminder)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(viridis)
+library(hrbrthemes)
+options(scipen = 999)
+# Interactive version
+p <- covid19 %>%
+filter(date == "2021-03-01") %>%   
+
+  # prepare text for tooltip
+  mutate(text = paste("State: ", state, "\nCases: ", cases, "\ndeaths: ", deaths)) %>%
+  
+  # Classic ggplot
+  ggplot( aes(x=state, y=cases, size = cases, color = state, text=text)) +
+    geom_point(alpha=0.7) +
+    scale_size(range = c(1.4, 19), name="Cases") +
+    scale_color_viridis(discrete=TRUE, guide=FALSE) +
+    theme_ipsum() +
+    theme(legend.position="none")+
+    labs(title = "Covid Cases and Deaths per State")+
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+# turn ggplot interactive with plotly
+pp <- ggplotly(p, tooltip="text")
+pp
+
+```
+
+The graph above shows each state along the x-axis denoted by its unique state code, fips. The y-axis shows the number of total COVID cases on March 1st 2021. The size of the circles show the total number of deaths in each state. Clicking on each circle will also provide the exact number of cases and deaths for that state. 
+```{r}
+library(gganimate)
+
+p <- covid19 %>% 
+  
+  ggplot(aes(x = cases, y=deaths, size = deaths, colour = state)
+  ) +
+  geom_point(show.legend = FALSE, alpha = 0.7) +
+  scale_color_viridis_d() +
+  scale_size(range = c(2, 12)) +
+ # scale_x_log10() +
+  labs(x = "Covid Cases", y = "Covid deaths")
+p + transition_time(date) +
+  labs(title = "Date: {frame_time}")
+
+```
+```{r}
+options(scipen = 999)
+p <- covid19 %>% 
+  filter(state == "Minnesota" | state == "Illinois" | state == "New York" | state == "California"| state == "Texas" | state == "Florida") %>% 
+  ggplot(aes(date, cases, color = state, )) +
+  geom_line() +
+  scale_color_viridis_d() +
+  labs(x = "Day of Month", y = "COVID cases") +
+    scale_color_manual(values=c("Green","Pink", "Red","Cyan", "Purple", "Orange"))+
+  theme(legend.position = "top")
+p
+```
+
+This graph shows the same six states as before, and below is a animated version of this graph to visually show how COVID cases increased over time. 
+```{r}
+p + transition_reveal(date)
+```
+
